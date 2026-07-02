@@ -1,0 +1,67 @@
+service: qr-attendance-serverless
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-southeast-1 # Khu vực Singapore (gần Việt Nam nhất, tốc độ cao)
+  stage: dev
+
+  # Cấu hình phân quyền (IAM Roles) cho phép các hàm Lambda đọc/ghi vào DynamoDB
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:Scan
+          Resource:
+            - "arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Classes"
+            - "arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Logs"
+
+functions:
+  # 1. API dành cho Giảng viên tạo phòng học và đổi mã QR
+  createClass:
+    handler: src/functions/teacher/createClass.handler
+    events:
+      - http:
+          path: teacher/create-class
+          method: post
+          cors: true # Bật CORS để Frontend ở S3 gọi lên được không bị lỗi bảo mật
+
+  # 2. API dành cho Sinh viên bấm điểm danh bằng QR và gửi GPS
+  checkIn:
+    handler: src/functions/student/checkIn.handler
+    events:
+      - http:
+          path: student/check-in
+          method: post
+          cors: true
+
+# Tự động khởi tạo các bảng DynamoDB trên AWS thay vì phải vào web tạo bằng tay
+resources:
+  Resources:
+    ClassesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: QR_Attendance_Classes
+        AttributeDefinitions:
+          - AttributeName: class_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: class_id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST # Chế độ miễn phí, dùng bao nhiêu trả bấy nhiêu
+
+    AttendanceLogsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: QR_Attendance_Logs
+        AttributeDefinitions:
+          - AttributeName: log_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: log_id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
