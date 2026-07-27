@@ -1,0 +1,16 @@
+{
+  "TableName": "QR_Attendance_Courses",
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "course_id",
+      "AttributeType": "S"
+    }
+  ],
+  "KeySchema": [
+    {
+      "AttributeName": "course_id",
+      "KeyType": "HASH"
+    }
+  ],
+  "BillingMode": "PAY_PER_REQUEST"
+}

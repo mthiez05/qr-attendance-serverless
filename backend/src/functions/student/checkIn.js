@@ -1,4 +1,9 @@
-const { DynamoDBClient, GetItemCommand, PutItemCommand } = require("@aws-sdk/client-dynamodb");
+const {
+    DynamoDBClient,
+    GetItemCommand,
+    PutItemCommand,
+    ScanCommand
+} = require("@aws-sdk/client-dynamodb");
 const { getDistanceInMeters } = require("../../utils/helpers");
 const crypto = require("crypto");
 
@@ -25,13 +30,35 @@ exports.handler = async (event) => {
         const tokenExpiredAt = parseInt(classInfo.token_expired_at.N);
         const teacherLat = parseFloat(classInfo.latitude.N);
         const teacherLon = parseFloat(classInfo.longitude.N);
+        // 2. Kiểm tra sinh viên có thuộc lớp học này không
+        const enrollmentResult = await client.send(
+            new ScanCommand({
+                TableName: "QR_Attendance_Enrollments",
+                FilterExpression: "student_id = :sid AND class_id = :cid",
+                ProjectionExpression: "student_id, class_id",
+                ExpressionAttributeValues: {
+                    ":sid": { S: student_id },
+                    ":cid": { S: class_id }
+                }
+            })
+        );
 
+
+        if (!enrollmentResult.Items || enrollmentResult.Items.length === 0) {
+            return {
+                statusCode: 403,
+                headers: { "Access-Control-Allow-Origin": "*" },
+                body: JSON.stringify({
+                    message: "Bạn không đăng ký lớp học này!"
+                })
+            };
+        }
         // 2. Kiểm tra tính hợp lệ của mã Token (Mã QR)
         if (token !== correctToken || Date.now() > tokenExpiredAt) {
-            return { 
-                statusCode: 400, 
+            return {
+                statusCode: 400,
                 headers: { "Access-Control-Allow-Origin": "*" },
-                body: JSON.stringify({ message: "Mã QR đã hết hạn hoặc không chính xác. Hãy quét lại mã mới!" }) 
+                body: JSON.stringify({ message: "Mã QR đã hết hạn hoặc không chính xác. Hãy quét lại mã mới!" })
             };
         }
 
@@ -59,10 +86,10 @@ exports.handler = async (event) => {
 
         const distance = getDistanceInMeters(student_lat, student_lon, teacherLat, teacherLon);
         if (distance > 50) {
-            return { 
-                statusCode: 400, 
+            return {
+                statusCode: 400,
                 headers: { "Access-Control-Allow-Origin": "*" },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     message: `Điểm danh thất bại! Bạn đang ở quá xa lớp học (${Math.round(distance)}m).`,
                     // DEBUG START
                     teacher_lat: teacherLat,
@@ -72,7 +99,7 @@ exports.handler = async (event) => {
                     distance: distance,
                     allowed_radius: 50
                     // DEBUG END
-                }) 
+                })
             };
         }
 

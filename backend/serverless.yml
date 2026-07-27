@@ -3,34 +3,123 @@ service: qr-attendance-serverless
 provider:
   name: aws
   runtime: nodejs18.x
-  region: ap-southeast-1 # Khu vực Singapore (gần Việt Nam nhất, tốc độ cao)
+  region: ap-southeast-1
   stage: dev
 
-  # Cấu hình phân quyền (IAM Roles) cho phép các hàm Lambda đọc/ghi vào DynamoDB
+  environment:
+    REGION: ap-southeast-1
+
   iam:
     role:
       statements:
+
+        # QR_Attendance_Classes
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Scan
+            - dynamodb:Query
+          Resource:
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Classes
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Classes/index/*
+
+
+        # QR_Attendance_Logs
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Scan
+            - dynamodb:Query
+          Resource:
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Logs
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Logs/index/*
+
+
+        # QR_Attendance_Users
         - Effect: Allow
           Action:
             - dynamodb:GetItem
             - dynamodb:PutItem
             - dynamodb:UpdateItem
             - dynamodb:Scan
+            - dynamodb:Query
           Resource:
-            - "arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Classes"
-            - "arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Logs"
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Users
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Users/index/*
+
+
+        # QR_Attendance_Schedules
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:Scan
+            - dynamodb:Query
+          Resource:
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Schedules
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Schedules/index/*
+
+
+        # QR_Attendance_Courses
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:Scan
+            - dynamodb:Query
+          Resource:
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Courses
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Courses/index/*
+
+
+        # QR_Attendance_Sessions
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:Scan
+            - dynamodb:Query
+          Resource:
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Sessions
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Sessions/index/*
+
+
+        # QR_Attendance_Enrollments
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:Scan
+            - dynamodb:Query
+          Resource:
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Enrollments
+            - arn:aws:dynamodb:ap-southeast-1:*:table/QR_Attendance_Enrollments/index/*
+
+
 
 functions:
-  # 1. API dành cho Giảng viên tạo phòng học và đổi mã QR
+
+  # 1. Giảng viên tạo lớp + tạo QR
   createClass:
     handler: src/functions/teacher/createClass.handler
     events:
       - http:
           path: teacher/create-class
           method: post
-          cors: true # Bật CORS để Frontend ở S3 gọi lên được không bị lỗi bảo mật
+          cors: true
 
-  # 2. API dành cho Sinh viên bấm điểm danh bằng QR và gửi GPS
+
+  # 2. Sinh viên điểm danh
   checkIn:
     handler: src/functions/student/checkIn.handler
     events:
@@ -39,29 +128,91 @@ functions:
           method: post
           cors: true
 
-# Tự động khởi tạo các bảng DynamoDB trên AWS thay vì phải vào web tạo bằng tay
+
+  # 3. Đăng nhập
+  login:
+    handler: src/functions/auth/login.handler
+    events:
+      - http:
+          path: login
+          method: post
+          cors: true
+
+
+  # 4. Lấy lịch giảng viên
+  getSchedules:
+    handler: src/functions/teacher/getSchedules.handler
+    events:
+      - http:
+          path: teacher/schedules
+          method: get
+          cors: true
+
+
+  # 5. Giảng viên xem điểm danh
+  getAttendance:
+    handler: src/functions/teacher/getAttendance.handler
+    events:
+      - http:
+          path: teacher/attendance
+          method: get
+          cors: true
+
+
+  # 6. Sinh viên xem lịch học
+  getStudentSchedules:
+    handler: src/functions/student/getSchedules.handler
+    events:
+      - http:
+          path: student/schedules
+          method: get
+          cors: true
+
+
+  # 7. Sinh viên xem lịch sử điểm danh
+  getStudentAttendance:
+    handler: src/functions/student/getAttendance.handler
+    events:
+      - http:
+          path: student/attendance
+          method: get
+          cors: true
+
+
+
+# ===============================
+# DynamoDB tạo bằng CloudFormation
+# ===============================
+
 resources:
   Resources:
-    ClassesTable:
+
+    QRAttendanceClassesTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: QR_Attendance_Classes
+        BillingMode: PAY_PER_REQUEST
+
         AttributeDefinitions:
           - AttributeName: class_id
             AttributeType: S
+
         KeySchema:
           - AttributeName: class_id
             KeyType: HASH
-        BillingMode: PAY_PER_REQUEST # Chế độ miễn phí, dùng bao nhiêu trả bấy nhiêu
 
-    AttendanceLogsTable:
+
+
+    QRAttendanceLogsTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: QR_Attendance_Logs
+        BillingMode: PAY_PER_REQUEST
+
         AttributeDefinitions:
           - AttributeName: log_id
             AttributeType: S
+
         KeySchema:
           - AttributeName: log_id
             KeyType: HASH
-        BillingMode: PAY_PER_REQUEST

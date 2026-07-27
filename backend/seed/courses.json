@@ -1,0 +1,31 @@
+{
+  "QR_Attendance_Courses": [
+    {
+      "PutRequest": {
+        "Item": {
+          "course_id": { "S": "INT2204" },
+          "course_name": { "S": "Mạng máy tính" },
+          "credits": { "N": "3" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "course_id": { "S": "INT3301" },
+          "course_name": { "S": "Cloud Computing" },
+          "credits": { "N": "3" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "course_id": { "S": "INT3405" },
+          "course_name": { "S": "Lập trình Web" },
+          "credits": { "N": "3" }
+        }
+      }
+    }
+  ]
+}

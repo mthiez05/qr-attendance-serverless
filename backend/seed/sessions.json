@@ -1,0 +1,16 @@
+{
+  "QR_Attendance_Sessions": [
+    {
+      "PutRequest": {
+        "Item": {
+          "session_id": { "S": "SESSION001" },
+          "schedule_id": { "S": "SCH001" },
+          "teacher_id": { "S": "GV001" },
+          "token": { "S": "LTEJ10" },
+          "status": { "S": "OPEN" },
+          "created_at": { "S": "2026-07-06T09:30:00Z" }
+        }
+      }
+    }
+  ]
+}

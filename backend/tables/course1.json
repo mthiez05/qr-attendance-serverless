@@ -1,0 +1,11 @@
+{
+  "course_id": {
+    "S": "INT2204"
+  },
+  "course_name": {
+    "S": "Mạng máy tính"
+  },
+  "credits": {
+    "N": "3"
+  }
+}

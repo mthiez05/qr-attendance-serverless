@@ -1,0 +1,32 @@
+{
+  "QR_Attendance_Schedules": [
+    {
+      "PutRequest": {
+        "Item": {
+          "schedule_id": { "S": "SCH001" },
+          "teacher_id": { "S": "GV001" },
+          "course_id": { "S": "INT2204" },
+          "class_id": { "S": "CNTT01" },
+          "room": { "S": "A203" },
+          "day": { "S": "Monday" },
+          "start_time": { "S": "07:30" },
+          "end_time": { "S": "09:30" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "schedule_id": { "S": "SCH002" },
+          "teacher_id": { "S": "GV001" },
+          "course_id": { "S": "INT3301" },
+          "class_id": { "S": "CNTT02" },
+          "room": { "S": "A401" },
+          "day": { "S": "Tuesday" },
+          "start_time": { "S": "13:00" },
+          "end_time": { "S": "15:00" }
+        }
+      }
+    }
+  ]
+}
